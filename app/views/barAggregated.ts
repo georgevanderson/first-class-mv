@@ -4,7 +4,6 @@ import { BarPipeline } from "../ingest/models";
 
 interface BarAggregated {
   dayOfMonth: number & typia.tags.Type<"int64">;
-  totalRows: number & typia.tags.Type<"int64">;
   rowsWithText: number & typia.tags.Type<"int64">;
   totalTextLength: number & typia.tags.Type<"int64">;
   maxTextLength: number & typia.tags.Type<"int64">;
@@ -19,7 +18,6 @@ export const BarAggregatedMV = new MaterializedView<BarAggregated>({
   orderByFields: ["dayOfMonth"],
   selectStatement: sql`SELECT
     toDayOfMonth(${barColumns.utcTimestamp}) as dayOfMonth,
-    count(${barColumns.primaryKey}) as totalRows,
     countIf(${barColumns.hasText}) as rowsWithText,
     sum(${barColumns.textLength}) as totalTextLength,
     max(${barColumns.textLength}) as maxTextLength
@@ -28,3 +26,8 @@ export const BarAggregatedMV = new MaterializedView<BarAggregated>({
   `,
   selectTables: [barTable],
 });
+
+export const BarView = new View("BarAggregatedView", sql`
+  SELECT * FROM ${BarAggregatedMV.targetTable}  LIMIT 10`,
+  [BarAggregatedMV.targetTable]
+);
